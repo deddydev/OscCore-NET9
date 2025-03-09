@@ -281,13 +281,13 @@ namespace OscCore
             while (recurse);
         }
 
-        void HandleCallbacks(OscActionPair pair, OscMessageValues messageValues)
+        void HandleCallbacks(OscActionPair? pair, OscMessageValues messageValues)
         {
             // call the value read method associated with this OSC address    
-            pair.ValueRead(messageValues);
+            pair?.ValueRead?.Invoke(messageValues);
             
             // if there's a main thread method, queue it
-            if (pair.MainThreadQueued != null)
+            if (pair?.MainThreadQueued != null)
             {
                 if (m_MainThreadCount >= m_MainThreadQueue.Length)
                     Array.Resize(ref m_MainThreadQueue, m_MainThreadCount + 16);
