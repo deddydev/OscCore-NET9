@@ -10,8 +10,8 @@ namespace OscCore
 {
     static class Utils
     {
-        static readonly List<char> k_TempChars = new List<char>();
-        static readonly StringBuilder k_Builder = new StringBuilder();
+        static readonly List<char> k_TempChars = [];
+        static readonly StringBuilder k_Builder = new();
 
         public static bool ValidateAddress(ref string address)
         {
@@ -19,7 +19,7 @@ namespace OscCore
                 address = "/";
             if(address[0] != '/') address = 
                 address.Insert(0, "/");
-            if(address.EndsWith(" "))
+            if(address.EndsWith(' '))
                 address = address.TrimEnd(' ');
 
             address = ReplaceInvalidAddressCharacters(address);
@@ -30,7 +30,7 @@ namespace OscCore
         {
             k_TempChars.Clear();
             k_TempChars.AddRange(address.Where(OscParser.CharacterIsValidInAddress));
-            return new string(k_TempChars.ToArray());
+            return new string([.. k_TempChars]);
         }
 
         public static unsafe TPtr* PinPtr<TData, TPtr>(TData[] array, out GCHandle handle) 
@@ -75,6 +75,5 @@ namespace OscCore
 
             return k_Builder.ToString();
         }
-
     }
 }

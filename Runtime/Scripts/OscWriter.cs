@@ -1,9 +1,8 @@
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using BlobHandles;
 using MiniNtp;
-using UnityEngine;
+using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace OscCore
 {
@@ -71,16 +70,16 @@ namespace OscCore
         /// <summary>Write a 2D vector as two float elements</summary>
         public void Write(Vector2 data)
         {
-            Write(data.x);
-            Write(data.y);
+            Write(data.X);
+            Write(data.Y);
         }
         
         /// <summary>Write a 3D vector as three float elements</summary>
         public void Write(Vector3 data)
         {
-            Write(data.x);
-            Write(data.y);
-            Write(data.z);
+            Write(data.X);
+            Write(data.Y);
+            Write(data.Z);
         }
 
         /// <summary>Write an ASCII string element. The string MUST be ASCII-encoded!</summary>
@@ -243,6 +242,8 @@ namespace OscCore
             m_Color32SwapHandle.SafeFree();
             m_FloatSwapHandle.SafeFree();
             m_DoubleSwapHandle.SafeFree();
+
+            GC.SuppressFinalize(this);
         }
     }
 }

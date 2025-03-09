@@ -1,11 +1,5 @@
-using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using UnityEngine;
-using Debug = UnityEngine.Debug;
-
-// allow tests to modify things as if in the same assembly
-[assembly:InternalsVisibleTo("OscCore.Tests.Editor")]
 
 namespace OscCore
 {
@@ -75,17 +69,8 @@ namespace OscCore
             for (int i = 0; i < ElementCount; i++)
                 elementAction(i, Tags[i]);
         }
-        
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        bool OutOfBounds(int index)
-        {
-            if (index >= ElementCount)
-            {
-                Debug.LogError($"Tried to read message element index {index}, but there are only {ElementCount} elements");
-                return true;
-            }
 
-            return false;
-        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool OutOfBounds(int index) => index >= ElementCount;
     }
 }

@@ -1,32 +1,25 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 
 namespace OscCore
 {
-    public sealed class OscAddressSpace
+    public sealed class OscAddressSpace(int startingCapacity = OscAddressSpace.k_DefaultCapacity)
     {
         const int k_DefaultPatternCapacity = 8;
         const int k_DefaultCapacity = 16;
 
-        internal readonly OscAddressMethods AddressToMethod;
+        internal readonly OscAddressMethods AddressToMethod = new(startingCapacity);
         
         // Keep a list of registered address patterns and the methods they're associated with just like addresses
         internal int PatternCount;
-        internal Regex[] Patterns = new Regex[k_DefaultPatternCapacity];
-        internal OscActionPair[] PatternMethods = new OscActionPair[k_DefaultPatternCapacity];
+        internal Regex?[] Patterns = new Regex?[k_DefaultPatternCapacity];
+        internal OscActionPair?[] PatternMethods = new OscActionPair?[k_DefaultPatternCapacity];
         
-        readonly Queue<int> FreedPatternIndices = new Queue<int>();
-        readonly Dictionary<string, int> PatternStringToIndex = new Dictionary<string, int>();
+        readonly Queue<int> FreedPatternIndices = new();
+        readonly Dictionary<string, int> PatternStringToIndex = [];
 
         public int HandlerCount => AddressToMethod.HandleToValue.Count;
 
         public IEnumerable<string> Addresses => AddressToMethod.SourceToBlob.Keys;
-
-        public OscAddressSpace(int startingCapacity = k_DefaultCapacity)
-        {
-            AddressToMethod = new OscAddressMethods(startingCapacity);
-        }
 
         public bool TryAddMethod(string address, OscActionPair onReceived)
         {
@@ -43,8 +36,12 @@ namespace OscCore
                     // if a method has already been registered for this pattern, add the new delegate
                     if (PatternStringToIndex.TryGetValue(address, out index))
                     {
-                        PatternMethods[index] += onReceived;
-                        return true;
+                        var patternMethod = PatternMethods[index];
+                        if (patternMethod is not null)
+                        {
+                            PatternMethods[index] = patternMethod + onReceived;
+                            return true;
+                        }
                     }
 
                     if (FreedPatternIndices.Count > 0)
@@ -77,13 +74,11 @@ namespace OscCore
             if (string.IsNullOrEmpty(address))
                 return false;
 
-            switch (OscParser.GetAddressType(address))
+            return OscParser.GetAddressType(address) switch
             {
-                case AddressType.Address:
-                    return AddressToMethod.RemoveAddress(address);
-                default:
-                    return false;
-            }
+                AddressType.Address => AddressToMethod.RemoveAddress(address),
+                _ => false,
+            };
         }
 
         public bool RemoveMethod(string address, OscActionPair onReceived)
@@ -99,7 +94,11 @@ namespace OscCore
                     if (!PatternStringToIndex.TryGetValue(address, out var patternIndex))
                         return false;
 
-                    var method = PatternMethods[patternIndex].ValueRead;
+                    var patternMethod = PatternMethods[patternIndex];
+                    if (patternMethod == null)
+                        return false;
+
+                    var method = patternMethod.ValueRead;
                     if (method.GetInvocationList().Length == 1)
                     {
                         Patterns[patternIndex] = null;
@@ -107,7 +106,7 @@ namespace OscCore
                     }
                     else
                     {
-                        PatternMethods[patternIndex] -= onReceived;
+                        PatternMethods[patternIndex] = patternMethod - onReceived;
                     }
 
                     PatternCount--;
@@ -135,9 +134,12 @@ namespace OscCore
             bool any = false;
             for (var i = 0; i < PatternCount; i++)
             {
-                if (Patterns[i].IsMatch(address))
+                if (Patterns[i]?.IsMatch(address) ?? false)
                 {
                     var handler = PatternMethods[i];
+                    if (handler is null)
+                        continue;
+
                     AddressToMethod.Add(address, handler);
                     any = true;
                 }

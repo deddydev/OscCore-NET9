@@ -29,32 +29,11 @@ namespace OscCore
     public static class TypeTagMethods
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool IsSupported(this TypeTag tag)
+        public static bool IsSupported(this TypeTag tag) => tag switch
         {
-            switch (tag)
-            {
-                case TypeTag.False:
-                case TypeTag.Infinitum:
-                case TypeTag.Nil:
-                case TypeTag.AltTypeString:
-                case TypeTag.True:
-                case TypeTag.Blob:
-                case TypeTag.AsciiChar32:
-                case TypeTag.Float64:
-                case TypeTag.Float32:
-                case TypeTag.Int64: 
-                case TypeTag.Int32: 
-                case TypeTag.MIDI: 
-                case TypeTag.Color32: 
-                case TypeTag.String: 
-                case TypeTag.TimeTag: 
-                case TypeTag.ArrayStart:
-                case TypeTag.ArrayEnd: 
-                    return true;
-                default: 
-                    return false;
-            }
-        }
+            TypeTag.False or TypeTag.Infinitum or TypeTag.Nil or TypeTag.AltTypeString or TypeTag.True or TypeTag.Blob or TypeTag.AsciiChar32 or TypeTag.Float64 or TypeTag.Float32 or TypeTag.Int64 or TypeTag.Int32 or TypeTag.MIDI or TypeTag.Color32 or TypeTag.String or TypeTag.TimeTag or TypeTag.ArrayStart or TypeTag.ArrayEnd => true,
+            _ => false,
+        };
     }
 }
 

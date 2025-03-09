@@ -1,13 +1,8 @@
-﻿using UnityEngine;
-
-namespace OscCore
+﻿namespace OscCore
 {
-    [AddComponentMenu("OSC/Input/Double Input")]
-    public class OscFloat64MessageHandler : OscMessageHandler<double, DoubleUnityEvent>
+    public class OscFloat64MessageHandler : OscMessageHandler<double>
     {
         protected override void ValueRead(OscMessageValues values)
-        {
-            m_Value = values.ReadFloat64Element(0);
-        }
+            => m_Value = values.ReadFloat64Element(0);
     }
 }

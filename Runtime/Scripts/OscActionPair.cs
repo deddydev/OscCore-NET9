@@ -17,9 +17,9 @@ namespace OscCore
         /// An optional method, which will be queued for execution on the main thread in the next frame after the message was received.
         /// This is useful for UnityEvents and anything that needs a main thread only Unity api.
         /// </summary>
-        public readonly Action MainThreadQueued;
+        public readonly Action? MainThreadQueued;
 
-        public OscActionPair(Action<OscMessageValues> valueRead, Action mainThreadQueued = null)
+        public OscActionPair(Action<OscMessageValues> valueRead, Action? mainThreadQueued = null)
         {
             const string nullWarning = "Value read callbacks required!";
             ValueRead = valueRead ?? throw new ArgumentNullException(nameof(valueRead), nullWarning);

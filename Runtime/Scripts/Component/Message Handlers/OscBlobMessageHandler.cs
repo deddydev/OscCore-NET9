@@ -1,12 +1,8 @@
-﻿using UnityEngine;
-
-namespace OscCore
+﻿namespace OscCore
 {
-    [ExecuteInEditMode]
-    [AddComponentMenu("OSC/Input/Blob Input")]
     public class OscBlobMessageHandler : MessageHandlerBase
     {
-        public BlobUnityEvent OnMessageReceived;
+        public event Action<byte[], int>? OnMessageReceived;
         
         protected byte[] m_Buffer = new byte[128];
 
@@ -14,13 +10,9 @@ namespace OscCore
         public int LastReceivedBlobLength { get; private set; }
 
         protected override void ValueRead(OscMessageValues values)
-        {
-            LastReceivedBlobLength = values.ReadBlobElement(0, ref m_Buffer);
-        }
-        
+            => LastReceivedBlobLength = values.ReadBlobElement(0, ref m_Buffer);
+
         protected override void InvokeEvent()
-        {
-            OnMessageReceived.Invoke(m_Buffer, LastReceivedBlobLength);
-        }
+            => OnMessageReceived?.Invoke(m_Buffer, LastReceivedBlobLength);
     }
 }

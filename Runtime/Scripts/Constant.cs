@@ -1,12 +1,7 @@
-using System;
 using System.Text;
-using UnityEditor;
 
 namespace OscCore
 {
-#if UNITY_EDITOR
-    [InitializeOnLoad]
-#endif
     static class Constant
     {
         public const byte Comma = (byte) ',';

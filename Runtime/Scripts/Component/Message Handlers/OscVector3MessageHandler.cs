@@ -1,9 +1,8 @@
-﻿using UnityEngine;
+﻿using System.Numerics;
 
 namespace OscCore
 {
-    [AddComponentMenu("OSC/Input/Vector3 Input")]
-    public class OscVector3MessageHandler : OscMessageHandler<Vector3, Vector3UnityEvent>
+    public class OscVector3MessageHandler : OscMessageHandler<Vector3>
     {
         protected override void ValueRead(OscMessageValues values)
         {

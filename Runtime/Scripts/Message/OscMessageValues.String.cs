@@ -67,7 +67,7 @@ namespace OscCore
                     m_SwapBuffer32[2] = m_SharedBuffer[offset + 1];
                     m_SwapBuffer32[3] = m_SharedBuffer[offset];
                     var color32 = *SwapBufferColor32Ptr;
-                    return color32.ToString();
+                    return color32.ToString() ?? string.Empty;
                 case TypeTag.MIDI:
                     var midiPtr = SharedBufferPtr + offset;
                     var midi = *(MidiMessage*) midiPtr;

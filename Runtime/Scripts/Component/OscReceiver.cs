@@ -1,15 +1,8 @@
-﻿using System;
-using UnityEngine;
-
-namespace OscCore
+﻿namespace OscCore
 {
-    /// <summary>Wraps an OscServer in a Unity Component</summary>
-    [AddComponentMenu("OSC/OSC Receiver", int.MinValue)]
-    [ExecuteInEditMode]
-    public class OscReceiver : MonoBehaviour
+    public class OscReceiver
     {
-        [Tooltip("The local port to listen for incoming messages on")]
-        [SerializeField] int m_Port = 9000;
+        int m_Port = 9000;
 
         /// <summary>
         /// The local port to listen to incoming messages on.
@@ -18,48 +11,33 @@ namespace OscCore
         public int Port
         {
             get => m_Port;
-            set => SetPort(value);
+            set => SetPort(value.ClampPort());
         }
 
         /// <summary>True if this receiver is bound to its port and listening, false otherwise</summary>
         public bool Running { get; private set; }
 
         /// <summary>The underlying server that handles message receiving.</summary>
-        public OscServer Server { get; private set; }
+        public OscServer? Server { get; private set; }
 
-        void OnEnable()
-        {
-            OnStart();
-        }
-
-        void Awake()
-        {
-            OnStart();
-        }
-
-        void OnStart()
+        public void OnStart()
         {
             Server = OscServer.GetOrCreate(m_Port);
             Running = true;
         }
 
-        void OnValidate()
-        {
-            m_Port = m_Port.ClampPort();
-        }
-
-        void Update()
+        public void Update()
         { 
             Server?.Update();
         }
 
-        void OnDestroy()
+        public void OnDestroy()
         {
             Server?.Dispose();
             Server = null;
         }
 
-        void SetPort(int newPort)
+        private void SetPort(int newPort)
         {
             var clamped = newPort.ClampPort();
             if (clamped != newPort) return;
@@ -73,9 +51,8 @@ namespace OscCore
                 oldServer?.Dispose();
             }
             // if creating a new server throws for any reason, make sure to keep old settings
-            catch (Exception e)
+            catch (Exception)
             {
-                Debug.LogException(e, this);
                 m_Port = oldValue;
                 Server = oldServer;
             }

@@ -1,8 +1,6 @@
-﻿using System;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
-using Unity.Collections;
-using Unity.Collections.LowLevel.Unsafe;
 
 namespace BlobHandles
 {
@@ -16,69 +14,56 @@ namespace BlobHandles
         /// WARNING - Changing this after strings have been encoded will probably lead to errors!
         /// </summary>
         public static Encoding Encoding { get; set; } = Encoding.ASCII;
-        
-        // Stores all of the bytes that represent this string
-        readonly NativeArray<byte> Bytes; 
-        
-        public readonly BlobHandle Handle;
 
-        public int Length => Bytes.Length;
-        
-        public unsafe BlobString(string source, Allocator allocator = Allocator.Persistent)
+        public readonly BlobHandle Handle;
+        private readonly bool m_OwnsMemory;
+
+        public readonly int Length => Handle.Length;
+
+        public unsafe BlobString(string source)
         {
             var byteCount = Encoding.GetByteCount(source);
-            Bytes = new NativeArray<byte>(byteCount, allocator);
-            var nativeBytesPtr = (byte*) Bytes.GetUnsafePtr();
-            
+            var nativeBytesPtr = (byte*)Marshal.AllocHGlobal(byteCount);
+
             // write encoded string bytes directly to unmanaged memory
             fixed (char* strPtr = source)
             {
                 Encoding.GetBytes(strPtr, source.Length, nativeBytesPtr, byteCount);
                 Handle = new BlobHandle(nativeBytesPtr, byteCount);
             }
+            m_OwnsMemory = true;
         }
-        
+
         public unsafe BlobString(byte* sourcePtr, int length)
         {
             Handle = new BlobHandle(sourcePtr, length);
-            Bytes = default;
-        }
-                
-        public override unsafe string ToString()
-        {
-            return Encoding.GetString(Handle.Pointer, Handle.Length);
+            m_OwnsMemory = false;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public override int GetHashCode()
-        {
-            return Handle.GetHashCode();
-        }
+        public override readonly unsafe string ToString()
+            => Encoding.GetString(Handle.Pointer, Handle.Length);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool Equals(BlobString other)
-        {
-            return Handle.Equals(other.Handle);
-        }
-        
-        public override bool Equals(object obj)
-        {
-            return obj is BlobString other && Handle.Equals(other.Handle);
-        }
+        public override readonly int GetHashCode()
+            => Handle.GetHashCode();
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly bool Equals(BlobString other)
+            => Handle.Equals(other.Handle);
+
+        public override readonly bool Equals(object? obj)
+            => obj is BlobString other && Handle.Equals(other.Handle);
 
         public static bool operator ==(BlobString l, BlobString r)
-        {
-            return l.Handle == r.Handle;
-        }
+            => l.Handle == r.Handle;
 
         public static bool operator !=(BlobString l, BlobString r)
+            => l.Handle != r.Handle;
+
+        public readonly unsafe void Dispose()
         {
-            return l.Handle != r.Handle;
-        }
-        
-        public void Dispose()
-        {
-            if(Bytes.IsCreated) Bytes.Dispose();
+            if (m_OwnsMemory)
+                Marshal.FreeHGlobal((nint)Handle.Pointer);
         }
     }
 }

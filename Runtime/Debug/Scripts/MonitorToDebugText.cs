@@ -1,42 +1,43 @@
-﻿using System.Text;
-using BlobHandles;
-using UnityEngine;
+﻿using BlobHandles;
+using System.Text;
 
 namespace OscCore.Demo
 {
-    public class MonitorToDebugText : MonoBehaviour
+    public class MonitorToDebugText 
     {
         const int k_LineCount = 9;
         const int k_LastIndex = k_LineCount - 1;
-        static readonly StringBuilder k_StringBuilder = new StringBuilder();
+        static readonly StringBuilder k_StringBuilder = new();
         
-        public OscReceiver Receiver;
+        public OscReceiver Receiver { get; }
 
-        public TextMesh IpAddressText;
-        public TextMesh RecentValueText;
+        public event Action<string>? RecentValueText;
 
-        int m_ReplaceLineIndex;
-        bool m_Dirty;
+        private int m_ReplaceLineIndex;
+        private bool m_Dirty;
 
-        readonly string[] m_ReceivedAsString = new string[k_LineCount];
+        private readonly string[] m_ReceivedAsString = new string[k_LineCount];
 
-        public void Awake()
+        public MonitorToDebugText(OscReceiver receiver, out string localIp, out int port)
         {
-            IpAddressText.text = $"Local IP: {Utils.GetLocalIpAddress()} , Port {Receiver.Port}";
-            
-            Receiver.Server.AddMonitorCallback(Monitor);
+            Receiver = receiver;
+            localIp = Utils.GetLocalIpAddress();
+            port = receiver.Port;
+            receiver.Server?.AddMonitorCallback(Monitor);
         }
 
-        void Update()
+        public bool Update(out string output)
         {
-            if (m_Dirty)
-            {
-                RecentValueText.text = BuildMultiLine();
-                m_Dirty = false;
-            }
+            output = string.Empty;
+            if (!m_Dirty)
+                return false;
+
+            output = BuildMultiLine();
+            m_Dirty = false;
+            return true;
         }
 
-        void Monitor(BlobString address, OscMessageValues values)
+        private void Monitor(BlobString address, OscMessageValues values)
         {
             m_Dirty = true;
 
@@ -54,7 +55,7 @@ namespace OscCore.Demo
                 m_ReplaceLineIndex++;
         }
 
-        string BuildMultiLine()
+        private string BuildMultiLine()
         {
             k_StringBuilder.Clear();
             for (int i = 0; i <= m_ReplaceLineIndex; i++)

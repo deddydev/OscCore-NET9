@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 namespace MiniNtp
 {
     /// <summary>64-bit NTP timestamp as described in RFC-1305 & 5905</summary>
-    public struct NtpTimestamp : IEquatable<NtpTimestamp>, IComparable<NtpTimestamp>
+    public readonly struct NtpTimestamp : IEquatable<NtpTimestamp>, IComparable<NtpTimestamp>
     {
         /// <summary>The number of seconds since the last epoch</summary>
         public readonly uint Seconds;
@@ -31,17 +31,16 @@ namespace MiniNtp
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe NtpTimestamp FromBigEndianBytes(byte[] buffer, int offset)
         {
-            fixed (byte* bPtr = &buffer[offset]) return FromBigEndianBytes((uint*) bPtr);
+            fixed (byte* bPtr = &buffer[offset])
+                return FromBigEndianBytes((uint*) bPtr);
         }
 
         /// <summary>Read a new timestamp from big-endian bytes</summary>
         /// <param name="tsPtr">Pointer to the timestamp to read</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe NtpTimestamp FromBigEndianBytes(byte* tsPtr)
-        {
-            return FromBigEndianBytes((uint*) tsPtr);
-        }
-        
+            => FromBigEndianBytes((uint*)tsPtr);
+
         /// <summary>Read a new timestamp from big-endian bytes</summary>
         /// <param name="tsPtr">Pointer to the timestamp to read</param>
         public static unsafe NtpTimestamp FromBigEndianBytes(uint* tsPtr)
@@ -57,7 +56,7 @@ namespace MiniNtp
             return new NtpTimestamp(seconds, fractions);
         }
 
-        public DateTime ToDateTime()
+        public readonly DateTime ToDateTime()
         {
             // account for the special "now" value
             if (Fractions == 1 && Seconds == 0) return DateTime.Now;
@@ -70,7 +69,7 @@ namespace MiniNtp
         /// <summary>Convert to big-endian byte order</summary>
         /// <param name="bytes">The bytes to copy into</param>
         /// <param name="offset">The index in the bytes to start writing at</param>
-        public unsafe void ToBigEndianBytes(byte[] bytes, int offset)
+        public readonly unsafe void ToBigEndianBytes(byte[] bytes, int offset)
         {
             fixed (byte* bPtr = &bytes[offset])
             {
@@ -82,28 +81,22 @@ namespace MiniNtp
         
         /// <summary>Convert to big-endian byte order</summary>
         /// <param name="writePtr">The pointer to start writing at</param>
-        public unsafe void ToBigEndianBytes(uint* writePtr)
+        public readonly unsafe void ToBigEndianBytes(uint* writePtr)
         {
             writePtr[0] = Seconds.ReverseBytes();
             writePtr[1] = Fractions.ReverseBytes();
         }
 
-        public override string ToString()
-        {
-            return $"Seconds: {Seconds} , Fractions {Fractions}";
-        }
+        public override readonly string ToString()
+            => $"Seconds: {Seconds} , Fractions {Fractions}";
 
-        public bool Equals(NtpTimestamp other)
-        {
-            return Seconds == other.Seconds && Fractions == other.Fractions;
-        }
+        public readonly bool Equals(NtpTimestamp other)
+            => Seconds == other.Seconds && Fractions == other.Fractions;
 
-        public override bool Equals(object obj)
-        {
-            return obj is NtpTimestamp other && Equals(other);
-        }
+        public override readonly bool Equals(object? obj)
+            => obj is NtpTimestamp other && Equals(other);
 
-        public override int GetHashCode()
+        public override readonly int GetHashCode()
         {
             unchecked
             {
@@ -112,45 +105,31 @@ namespace MiniNtp
         }
 
         public static bool operator ==(NtpTimestamp left, NtpTimestamp right)
-        {
-            return left.Equals(right);
-        }
+            => left.Equals(right);
 
         public static bool operator !=(NtpTimestamp left, NtpTimestamp right)
-        {
-            return !left.Equals(right);
-        }
+            => !left.Equals(right);
 
-        public int CompareTo(NtpTimestamp other)
+        public readonly int CompareTo(NtpTimestamp other)
         {
             var secondsComparison = Seconds.CompareTo(other.Seconds);
             return secondsComparison != 0 ? secondsComparison : Fractions.CompareTo(other.Fractions);
         }
-        
+
         public static bool operator <(NtpTimestamp left, NtpTimestamp right)
-        {
-            return left.CompareTo(right) < 0;
-        }
+            => left.CompareTo(right) < 0;
 
         public static bool operator >(NtpTimestamp left, NtpTimestamp right)
-        {
-            return left.CompareTo(right) > 0;
-        }
+            => left.CompareTo(right) > 0;
 
         public static bool operator <=(NtpTimestamp left, NtpTimestamp right)
-        {
-            return left.CompareTo(right) <= 0;
-        }
+            => left.CompareTo(right) <= 0;
 
         public static bool operator >=(NtpTimestamp left, NtpTimestamp right)
-        {
-            return left.CompareTo(right) >= 0;
-        }
-        
+            => left.CompareTo(right) >= 0;
+
         // You can directly subtract ntp timestamps, but not add them
         public static NtpTimestamp operator -(NtpTimestamp left, NtpTimestamp right)
-        {
-            return new NtpTimestamp(left.Seconds - right.Seconds, left.Fractions - right.Fractions);
-        }
+            => new(left.Seconds - right.Seconds, left.Fractions - right.Fractions);
     }
 }

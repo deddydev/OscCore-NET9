@@ -1,36 +1,27 @@
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using BlobHandles;
-using Unity.IL2CPP.CompilerServices.BlobHandles;
+using System.Runtime.CompilerServices;
 
 namespace OscCore
 {
     /// <summary>Maps from OSC address to the delegates associated with it</summary>
-    internal sealed unsafe class OscAddressMethods: IDisposable
+    internal sealed unsafe class OscAddressMethods(int initialCapacity = OscAddressMethods.defaultSize) : IDisposable
     {
-        const int defaultSize = 16;
+        private const int defaultSize = 16;
         
         /// <summary>
         /// Map from the unmanaged representation of an OSC address to the delegates associated with it
         /// </summary>
-        public readonly Dictionary<BlobHandle, OscActionPair> HandleToValue;
+        public readonly Dictionary<BlobHandle, OscActionPair> HandleToValue = new(initialCapacity);
         
         /// <summary>
         /// Map from the source string of an OSC address to the unmanaged representation
         /// </summary>
-        internal readonly Dictionary<string, BlobString> SourceToBlob;
+        internal readonly Dictionary<string, BlobString> SourceToBlob = new(initialCapacity);
 
-        public OscAddressMethods(int initialCapacity = defaultSize)
-        {
-            HandleToValue = new Dictionary<BlobHandle, OscActionPair>(initialCapacity);
-            SourceToBlob = new Dictionary<string, BlobString>(initialCapacity);
-        }
-        
         /// <summary>Adds a callback to be executed when a message is received at the address</summary>
         /// <param name="address">The address to associate the method with</param>
         /// <param name="callbacks">The method(s) to be invoked</param>
-        [Il2CppSetOption(Option.NullChecks, false)]
+        //[Il2CppSetOption(Option.NullChecks, false)]
         public void Add(string address, OscActionPair callbacks)
         {
             if (!SourceToBlob.TryGetValue(address, out var blobStr))
@@ -41,7 +32,7 @@ namespace OscCore
             }
             else
             {
-                if(HandleToValue.ContainsKey(blobStr.Handle))
+                if (HandleToValue.ContainsKey(blobStr.Handle))
                     HandleToValue[blobStr.Handle] += callbacks;
                 else
                     HandleToValue[blobStr.Handle] = callbacks;
@@ -51,7 +42,7 @@ namespace OscCore
         /// <summary>Adds a callback to be executed when a message is received at the address</summary>
         /// <param name="address">The address to associate the method with</param>
         /// <param name="callback">The method to be invoked</param>
-        [Il2CppSetOption(Option.NullChecks, false)]
+        //[Il2CppSetOption(Option.NullChecks, false)]
         public void Add(string address, Action<OscMessageValues> callback)
         {
             Add(address, new OscActionPair(callback, null));
@@ -60,7 +51,7 @@ namespace OscCore
         /// <summary>Adds a list of callbacks to be executed when a message is received at the address</summary>
         /// <param name="address">The address to associate the methods with</param>
         /// <param name="callbacks">The methods to be invoked</param>
-        [Il2CppSetOption(Option.NullChecks, false)]
+        //[Il2CppSetOption(Option.NullChecks, false)]
         internal void Add(string address, List<OscActionPair> callbacks)
         {
             if (callbacks.Count == 0) return;
@@ -77,7 +68,7 @@ namespace OscCore
         /// <param name="address">The address to remove</param>
         /// <param name="callbacks">The callback pair to remove</param>
         /// <returns>true if the string was found and removed, false otherwise</returns>
-        [Il2CppSetOption(Option.NullChecks, false)]
+        //[Il2CppSetOption(Option.NullChecks, false)]
         public bool Remove(string address, OscActionPair callbacks)
         {
             if (!SourceToBlob.TryGetValue(address, out var blobStr)) 
@@ -112,8 +103,8 @@ namespace OscCore
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        [Il2CppSetOption(Option.NullChecks, false)]
-        public bool TryGetValueFromBytes(byte* ptr, int byteCount, out OscActionPair value)
+        //[Il2CppSetOption(Option.NullChecks, false)]
+        public bool TryGetValueFromBytes(byte* ptr, int byteCount, out OscActionPair? value)
         {
             return HandleToValue.TryGetValue(new BlobHandle(ptr, byteCount), out value);
         }

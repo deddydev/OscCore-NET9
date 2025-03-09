@@ -1,13 +1,8 @@
-﻿using UnityEngine;
-
-namespace OscCore
+﻿namespace OscCore
 {
-    [AddComponentMenu("OSC/Input/Float Input")]
-    public class OscFloatMessageHandler : OscMessageHandler<float, FloatUnityEvent>
+    public class OscFloatMessageHandler : OscMessageHandler<float>
     {
         protected override void ValueRead(OscMessageValues values)
-        {
-            m_Value = values.ReadFloatElement(0);
-        }
+            => m_Value = values.ReadFloatElement(0);
     }
 }

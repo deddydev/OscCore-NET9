@@ -1,13 +1,8 @@
-﻿using UnityEngine;
-
-namespace OscCore
+﻿namespace OscCore
 {
-    [AddComponentMenu("OSC/Input/String Input")]
-    public class OscStringMessageHandler : OscMessageHandler<string, StringUnityEvent>
+    public class OscStringMessageHandler : OscMessageHandler<string>
     {
         protected override void ValueRead(OscMessageValues values)
-        {
-            m_Value = values.ReadStringElement(0);
-        }
+            => m_Value = values.ReadStringElement(0);
     }
 }

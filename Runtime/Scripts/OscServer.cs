@@ -1,58 +1,49 @@
-using System;
-using System.Collections.Generic;
+using BlobHandles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
-using BlobHandles;
-using UnityEngine;
-using UnityEngine.Profiling;
 
-[assembly:InternalsVisibleTo("OscCore.Editor")]
-
+[assembly: InternalsVisibleTo("OscCore.Editor")]
 namespace OscCore
 {
     public sealed unsafe class OscServer : IDisposable
     {
         // used to allow easy removal of single callbacks
-        static readonly Dictionary<Action<OscMessageValues>, OscActionPair> k_SingleCallbackToPair = 
-            new Dictionary<Action<OscMessageValues>, OscActionPair>();
+        private static readonly Dictionary<Action<OscMessageValues>, OscActionPair> k_SingleCallbackToPair = [];
 
-        readonly OscSocket m_Socket;
+        readonly OscSocket? m_Socket;
         bool m_Disposed;
         bool m_Started;
 
-        readonly byte[] m_ReadBuffer;
+        readonly byte[]? m_ReadBuffer;
         GCHandle m_BufferHandle;
-        byte* m_BufferPtr;
+        private readonly byte* m_BufferPtr;
         
         Action[] m_MainThreadQueue = new Action[16];
         int m_MainThreadCount;
 
-        readonly Dictionary<int, string> m_ByteLengthToStringBuffer = new Dictionary<int, string>();
+        readonly Dictionary<int, string> m_ByteLengthToStringBuffer = [];
         
-        readonly HashSet<MonitorCallback> m_MonitorCallbacks = new HashSet<MonitorCallback>();
+        readonly HashSet<MonitorCallback> m_MonitorCallbacks = [];
         
-        readonly List<OscActionPair> m_PatternMatchedMethods = new List<OscActionPair>();
+        readonly List<OscActionPair> m_PatternMatchedMethods = [];
         
         internal bool Running { get; set; }
 
         /// <summary>
         /// Map from port number to the server that handles incoming messages for it
         /// </summary>
-        public static readonly Dictionary<int, OscServer> PortToServer = new Dictionary<int, OscServer>();
+        public static readonly Dictionary<int, OscServer> PortToServer = [];
 
         public int Port { get; }
-        public OscAddressSpace AddressSpace { get; private set; }
-        public OscParser Parser { get; }
+        public OscAddressSpace? AddressSpace { get; private set; }
+        public OscParser? Parser { get; }
         
         public OscServer(int port, int bufferSize = 4096)
         {
             if (PortToServer.ContainsKey(port))
-            {
-                Debug.LogError($"port {port} is already in use, cannot start a new OSC Server on it");
                 return;
-            }
-
+            
             k_SingleCallbackToPair.Clear();
             AddressSpace = new OscAddressSpace();
             
@@ -75,7 +66,7 @@ namespace OscCore
                 return;
             }
             
-            m_Socket.Start();
+            m_Socket?.Start();
             
             m_Disposed = false;
             m_Started = true;
@@ -89,8 +80,7 @@ namespace OscCore
         /// <returns></returns>
         public static OscServer GetOrCreate(int port)
         {
-            OscServer server;
-            if (!PortToServer.TryGetValue(port, out server))
+            if (!PortToServer.TryGetValue(port, out OscServer? server))
             {
                 server = new OscServer(port);
                 PortToServer[port] = server;
@@ -103,8 +93,7 @@ namespace OscCore
         /// <returns>True if the server was found and disposed of, false otherwise</returns>
         public static bool Remove(int port)
         {
-            OscServer server;
-            if (PortToServer.TryGetValue(port, out server))
+            if (PortToServer.TryGetValue(port, out OscServer? server))
             {
                 server.Dispose();
                 return PortToServer.Remove(port);
@@ -124,9 +113,9 @@ namespace OscCore
         {
             var pair = new OscActionPair(valueReadMethod);
             k_SingleCallbackToPair.Add(valueReadMethod, pair);
-            return AddressSpace.TryAddMethod(address, pair);
+            return AddressSpace?.TryAddMethod(address, pair) ?? false;
         }
-        
+
         /// <summary>
         /// Remove a single background thread method from an OSC address
         /// </summary>
@@ -136,23 +125,13 @@ namespace OscCore
         /// </param>
         /// <returns>True if the method was removed from this address, false otherwise</returns>
         public bool RemoveMethod(string address, Action<OscMessageValues> valueReadMethod)
-        {
-            if (k_SingleCallbackToPair.TryGetValue(valueReadMethod, out var pair))
-            {
-                return AddressSpace.RemoveMethod(address, pair) && 
-                        k_SingleCallbackToPair.Remove(valueReadMethod);
-            }
+            => k_SingleCallbackToPair.TryGetValue(valueReadMethod, out var pair) && (AddressSpace?.RemoveMethod(address, pair) ?? false && k_SingleCallbackToPair.Remove(valueReadMethod));
 
-            return false;
-        }
-        
         /// <summary>Remove an address and all its methods from the server's address space</summary>
         /// <param name="address">The OSC address to handle messages for</param>
         /// <returns>True if the method address was found and removed, false otherwise</returns>
         public bool RemoveAddress(string address)
-        {
-            return AddressSpace.RemoveAddressMethod(address);
-        }
+            => AddressSpace?.RemoveAddressMethod(address) ?? false;
 
         /// <summary>
         /// Add a background thread read callback and main thread callback associated with an OSC address.
@@ -161,7 +140,7 @@ namespace OscCore
         /// <param name="actionPair">The pair of callbacks to add</param>
         /// <returns>True if the address was valid & methods associated with it, false otherwise</returns>
         public bool TryAddMethodPair(string address, OscActionPair actionPair) => 
-            AddressSpace.TryAddMethod(address, actionPair);
+            AddressSpace?.TryAddMethod(address, actionPair) ?? false;
         
         /// <summary>
         /// Add a background thread read callback and main thread callback associated with an OSC address.
@@ -169,7 +148,7 @@ namespace OscCore
         /// <param name="address">The OSC address to associate a method with</param>
         /// <returns>True if the address was valid & methods associated with it, false otherwise</returns>
         public bool TryAddMethodPair(string address, Action<OscMessageValues> read, Action mainThread) => 
-            AddressSpace.TryAddMethod(address, new OscActionPair(read, mainThread));
+            AddressSpace?.TryAddMethod(address, new OscActionPair(read, mainThread)) ?? false;
         
         /// <summary>
         /// Remove a background thread read callback and main thread callback associated with an OSC address.
@@ -219,10 +198,13 @@ namespace OscCore
         /// <param name="byteLength">The length of the received message</param>
         public void ParseBuffer(int byteLength)
         {
+            if (Parser is null)
+                return;
+
             var bufferPtr = Parser.BufferPtr;
             var bufferLongPtr = Parser.BufferLongPtr;
             var parser = Parser;
-            var addressToMethod = AddressSpace.AddressToMethod;
+            var addressToMethod = AddressSpace?.AddressToMethod;
             
             // determine if the message is a bundle or not 
             if (*bufferLongPtr != Constant.BundlePrefixLong)
@@ -235,16 +217,12 @@ namespace OscCore
                     return;    // address didn't start with '/'
 
                 // see if we have a method registered for this address
-                if (addressToMethod.TryGetValueFromBytes(bufferPtr, addressLength, out var methodPair))
-                {
+                if (addressToMethod?.TryGetValueFromBytes(bufferPtr, addressLength, out var methodPair) ?? false)
                     HandleCallbacks(methodPair, parser.MessageValues);
-                }
-                else if (AddressSpace.PatternCount > 0)
-                {
+                else if (AddressSpace?.PatternCount > 0)
                     TryMatchPatterns(parser, bufferPtr, addressLength);
-                }
-
-                Profiler.EndSample();
+                
+                //Profiler.EndSample();
                 if (m_MonitorCallbacks.Count > 0)
                     HandleMonitorCallbacks(bufferPtr, addressLength, parser);
 
@@ -287,16 +265,12 @@ namespace OscCore
                     }
 
                     var contentPtr = bufferPtr + contentIndex;
-                    if (addressToMethod.TryGetValueFromBytes(contentPtr, bundleAddressLength, out var bundleMethodPair))
-                    {
+                    if (addressToMethod?.TryGetValueFromBytes(contentPtr, bundleAddressLength, out var bundleMethodPair) ?? false)
                         HandleCallbacks(bundleMethodPair, parser.MessageValues);
-                    }
                     // if we have no handler for this exact address, we may have a pattern that matches it
-                    else if (AddressSpace.PatternCount > 0)
-                    {
+                    else if (AddressSpace?.PatternCount > 0)
                         TryMatchPatterns(parser, bufferPtr, bundleAddressLength);
-                    }
-
+                    
                     MessageOffset += messageSize + 4;
 
                     if (m_MonitorCallbacks.Count > 0) 
@@ -346,9 +320,9 @@ namespace OscCore
                 OverwriteAsciiString(stringBuffer, bufferPtr);
             }
 
-            if (AddressSpace.TryMatchPatternHandler(stringBuffer, m_PatternMatchedMethods))
+            if (AddressSpace?.TryMatchPatternHandler(stringBuffer, m_PatternMatchedMethods) ?? false)
             {
-                var bufferCopy = string.Copy(stringBuffer);
+                var bufferCopy = new string(stringBuffer);
                 AddressSpace.AddressToMethod.Add(bufferCopy, m_PatternMatchedMethods);
                 foreach (var matchedMethod in m_PatternMatchedMethods)
                 {
@@ -376,9 +350,11 @@ namespace OscCore
             m_Disposed = true;
 
             if(m_BufferHandle.IsAllocated) m_BufferHandle.Free();
-            AddressSpace.AddressToMethod.Dispose();
+            AddressSpace?.AddressToMethod.Dispose();
             AddressSpace = null;
-            m_Socket.Dispose();
+            m_Socket?.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         ~OscServer()
@@ -387,8 +363,6 @@ namespace OscCore
         }
 
         public int CountHandlers()
-        {
-            return AddressSpace?.AddressToMethod.SourceToBlob.Count ?? 0;
-        }
+            => AddressSpace?.AddressToMethod.SourceToBlob.Count ?? 0;
     }
 }

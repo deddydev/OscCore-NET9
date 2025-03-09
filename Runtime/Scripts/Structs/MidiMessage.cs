@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 namespace OscCore
 {
     [StructLayout(LayoutKind.Explicit)]
-    public struct MidiMessage : IEquatable<MidiMessage>
+    public readonly struct MidiMessage : IEquatable<MidiMessage>
     {
         [FieldOffset(0)] readonly int data;
         
@@ -32,40 +32,22 @@ namespace OscCore
         }
 
         public override string ToString()
-        {
-            return $"Port ID: {PortId}, Status: {Status}, Data 1: {Data1} , 2: {Data2}";
-        }
+            => $"Port ID: {PortId}, Status: {Status}, Data 1: {Data1} , 2: {Data2}";
 
         public bool Equals(MidiMessage other)
-        {
-            return PortId == other.PortId && Status == other.Status && Data1 == other.Data1 && Data2 == other.Data2;
-        }
+            => PortId == other.PortId && Status == other.Status && Data1 == other.Data1 && Data2 == other.Data2;
 
-        public override bool Equals(object obj)
-        {
-            return obj is MidiMessage other && Equals(other);
-        }
+        public override bool Equals(object? obj)
+            => obj is MidiMessage other && Equals(other);
 
         public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = Status.GetHashCode();
-                hashCode = (hashCode * 397) ^ Data1.GetHashCode();
-                hashCode = (hashCode * 397) ^ Data2.GetHashCode();
-                return hashCode;
-            }
-        }
+            => HashCode.Combine(Status, Data1, Data2);
 
         public static bool operator ==(MidiMessage left, MidiMessage right)
-        {
-            return left.Equals(right);
-        }
+            => left.Equals(right);
 
         public static bool operator !=(MidiMessage left, MidiMessage right)
-        {
-            return !left.Equals(right);
-        }
+            => !left.Equals(right);
     }
 }
 

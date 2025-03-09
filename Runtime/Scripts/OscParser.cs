@@ -1,8 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 
-[assembly:InternalsVisibleTo("OscCore.Tests.Editor")]
-[assembly:InternalsVisibleTo("OscCore.Tests.Runtime")]
-
 namespace OscCore
 {
     public unsafe class OscParser
@@ -84,7 +81,8 @@ namespace OscCore
 
         internal static bool AddressIsValid(string address)
         {
-            if (address[0] != '/') return false;
+            if (address[0] != '/')
+                return false;
 
             foreach (var chr in address)
             {
@@ -105,25 +103,12 @@ namespace OscCore
 
             return true;
         }
-        
-        internal static bool CharacterIsValidInAddress(char c)
+
+        internal static bool CharacterIsValidInAddress(char c) => c switch
         {
-            switch (c)
-            {
-                case ' ':
-                case '#':
-                case '*':
-                case ',':
-                case '?':
-                case '[':
-                case ']':
-                case '{':
-                case '}':
-                    return false;
-                default:
-                    return true;
-            }
-        }
+            ' ' or '#' or '*' or ',' or '?' or '[' or ']' or '{' or '}' => false,
+            _ => true,
+        };
 
         internal static AddressType GetAddressType(string address)
         {
@@ -168,7 +153,8 @@ namespace OscCore
         /// <returns> Size of tags in bytes, including ',' </returns>
         internal int ParseTags(byte[] bytes, int start = 0)
         {
-            if (bytes[start] != Constant.Comma) return 0;
+            if (bytes[start] != Constant.Comma)
+                return 0;
             
             var tagIndex = start + 1;         // skip the starting ','
             var outIndex = 0;
@@ -273,10 +259,8 @@ namespace OscCore
         /// <returns>True if present, false otherwise</returns>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool IsBundleTagAtIndex(int index)
-        {
-            return *((long*) BufferPtr + index) == Constant.BundlePrefixLong;
-        }
-        
+            => *((long*)BufferPtr + index) == Constant.BundlePrefixLong;
+
         public static int FindArrayLength(byte[] bytes, int offset = 0)
         {
             if ((TypeTag) bytes[offset] != TypeTag.ArrayStart)
@@ -290,4 +274,3 @@ namespace OscCore
         }
     }
 }
-

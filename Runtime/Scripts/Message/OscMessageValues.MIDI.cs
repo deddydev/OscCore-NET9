@@ -19,7 +19,7 @@ namespace OscCore
             switch (Tags[index])
             {
                 case TypeTag.MIDI:
-                    return *(MidiMessage*) (SharedBufferPtr + Offsets[index]);
+                    return *(MidiMessage*)(SharedBufferPtr + Offsets[index]);
                 default:
                     return default;
             }
@@ -38,7 +38,7 @@ namespace OscCore
 #if OSCCORE_SAFETY_CHECKS
             if (OutOfBounds(index)) return default;
 #endif
-            return *(MidiMessage*) (SharedBufferPtr + Offsets[index]);
+            return *(MidiMessage*)(SharedBufferPtr + Offsets[index]);
         }
     }
 }
